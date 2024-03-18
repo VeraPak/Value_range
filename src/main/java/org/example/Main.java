@@ -1,10 +1,11 @@
 package org.example;
 
 import java.util.*;
+import java.util.concurrent.*;
 
 public class Main {
 
-    public static void main(String[] args) throws InterruptedException {
+    public static void main(String[] args) throws InterruptedException, ExecutionException {
 
         String[] texts = new String[25];
 
@@ -12,12 +13,13 @@ public class Main {
             texts[i] = generateText("aab", 30_000);
         }
 
-        List<Thread> threads = new ArrayList<>();
+        List<FutureTask<Integer>> futures = new ArrayList<>();
 
+        final ExecutorService threadpool = Executors.newFixedThreadPool(2);
         long startTs = System.currentTimeMillis(); // start time
 
         for(String text : texts) {
-            Runnable runnable = () -> {
+            final Callable<Integer> callable = () -> {
                 int maxSize = 0;
                 for (int i = 0; i < text.length(); i++) {
                     for (int j = 0; j < text.length(); j++) {
@@ -37,15 +39,24 @@ public class Main {
                     }
                 }
                 System.out.println(text.substring(0, 100) + " -> " + maxSize);
+                return maxSize;
             };
-            threads.add(new Thread(runnable));
-        }
-        for (Thread thread : threads) {
-            thread.start();
-            thread.join(); // зависаем, ждём когда поток объект которого лежит в thread завершится
-        }
-        long endTs = System.currentTimeMillis(); // end time
 
+            final Future<Integer> task = threadpool.submit(callable);
+            futures.add((FutureTask<Integer>) task);
+        }
+        threadpool.shutdown();
+
+        int max = futures.get(0).get();
+        for(FutureTask<Integer> future : futures){
+            if(future.get() > max){
+                max = future.get();
+            }
+        }
+
+        System.out.println("max value: "+ max);
+
+        long endTs = System.currentTimeMillis(); // end time
         System.out.println("Time: " + (endTs - startTs) + "ms");
     }
 
@@ -58,3 +69,4 @@ public class Main {
         return text.toString();
     }
 }
+
