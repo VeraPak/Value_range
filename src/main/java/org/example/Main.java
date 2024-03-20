@@ -14,8 +14,8 @@ public class Main {
         }
 
         List<FutureTask<Integer>> futures = new ArrayList<>();
+        final ExecutorService threadPool = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
 
-        final ExecutorService threadpool = Executors.newFixedThreadPool(2);
         long startTs = System.currentTimeMillis(); // start time
 
         for(String text : texts) {
@@ -42,10 +42,10 @@ public class Main {
                 return maxSize;
             };
 
-            final Future<Integer> task = threadpool.submit(callable);
+            final Future<Integer> task = threadPool.submit(callable);
             futures.add((FutureTask<Integer>) task);
         }
-        threadpool.shutdown();
+        threadPool.shutdown();
 
         int max = futures.get(0).get();
         for(FutureTask<Integer> future : futures){
